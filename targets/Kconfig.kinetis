@@ -1,0 +1,21 @@
+config LOSCFG_PLATFORM
+    string
+    default "MK20DX256_Teensy31"        if LOSCFG_PLATFORM_MK20DX256_TEENSY31
+
+choice
+    prompt "Target"
+    depends on LOSCFG_FAMILY_KINETIS
+    default LOSCFG_PLATFORM_MK20DX256_TEENSY31
+    help
+      Teensy 3.1
+
+config LOSCFG_PLATFORM_MK20DX256_TEENSY31
+    bool "Teensy31"
+    select LOSCFG_PLATFORM_KINETIS
+    select LOSCFG_ARCH_CORTEX_M4
+    select LOSCFG_CORTEX_M_NVIC
+    select LOSCFG_CORTEX_M_SYSTICK
+    select LOSCFG_DRIVER_HAL_LIB
+    select LOSCFG_USING_BOARD_LD
+
+endchoice

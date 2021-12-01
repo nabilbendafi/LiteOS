@@ -93,6 +93,10 @@ else ifeq ($(LOSCFG_PLATFORM_APM32F103_GEEHY), y)
 ######################### RASPBERRY_PI2B Options ################################
 else ifeq ($(LOSCFG_PLATFORM_RASPBERRY_PI2B), y)
     HAL_DRIVER_TYPE := BCM2836_HAL_Driver
+######################### Teensy 3.1 Options #################################
+else ifeq ($(LOSCFG_PLATFORM_MK20DX256_TEENSY31), y)
+    TIMER_TYPE := arm/timer/arm_cortex_m
+    HAL_DRIVER_TYPE := MK20DX256xxx10_HAL_Driver
 endif
 
 HAL_DRIVER_SRC := drivers/$(HAL_DRIVER_TYPE)

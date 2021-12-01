@@ -13,6 +13,9 @@ config LOSCFG_FAMILY_FMSH
 config LOSCFG_FAMILY_GD
     bool "GD"
 
+config LOSCFG_FAMILY_KINETIS
+    bool "KINETIS"
+
 config LOSCFG_FAMILY_QEMU
     bool "QEMU"
 
@@ -34,6 +37,7 @@ osource "targets/Kconfig.apm32"
 osource "targets/Kconfig.csky"
 osource "targets/Kconfig.fmsh"
 osource "targets/Kconfig.gd"
+osource "targets/Kconfig.kinetis"
 osource "targets/Kconfig.qemu"
 osource "targets/Kconfig.raspberry"
 osource "targets/Kconfig.sifive"

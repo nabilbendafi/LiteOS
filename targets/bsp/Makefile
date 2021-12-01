@@ -108,7 +108,6 @@ STM32L4_HAL_SRC = \
     drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_dma_ex.c \
     drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rng.c
     LOCAL_SRCS = $(STM32L4_HAL_SRC)
-
 else ifeq ($(LOSCFG_PLATFORM_STM32F103_FIRE_ARBITRARY), y)
 STM32F103VETX_HAL_SRC = \
     drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
@@ -220,6 +219,15 @@ else ifeq ($(LOSCFG_PLATFORM_APM32F103_GEEHY), y)
 else ifeq ($(LOSCFG_PLATFORM_RASPBERRY_PI2B), y)
     RASPBERRY_PI2B_DRIVER_SRC = $(wildcard $(HAL_DRIVER_SRC)/Src/*.c)
     LOCAL_SRCS = $(RASPBERRY_PI2B_DRIVER_SRC)
+else ifeq ($(LOSCFG_PLATFORM_MK20DX256_TEENSY31), y)
+MK20DX256_TEENSY31_HAL_SRC = \
+    drivers/MK20DX256xxx10_HAL_Driver/Src/fsl_clock.c \
+    drivers/MK20DX256xxx10_HAL_Driver/Src/fsl_flash.c \
+    drivers/MK20DX256xxx10_HAL_Driver/Src/fsl_gpio.c \
+    drivers/MK20DX256xxx10_HAL_Driver/Src/fsl_i2c.c \
+    drivers/MK20DX256xxx10_HAL_Driver/Src/fsl_uart.c
+    LOCAL_SRCS = $(MK20DX256_TEENSY31_HAL_SRC)
+    LITEOS_CFLAGS += -DCPU_MK20DX256VLK10
 endif
 
 LOCAL_INCLUDE += $(PLATFORM_INCLUDE) \

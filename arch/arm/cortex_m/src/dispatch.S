@@ -37,7 +37,7 @@
 .thumb
 
 .equ OS_NVIC_INT_CTRL,           0xE000ED04
-.equ OS_NVIC_SYSPRI2,            0xE000ED20
+.equ OS_NVIC_SYS_PRI3,           0xE000ED20
 .equ OS_NVIC_PENDSV_PRI,         0xF0F00000
 .equ OS_NVIC_PENDSVSET,          0x10000000
 .equ OS_TASK_STATUS_RUNNING,     0x0010
@@ -50,7 +50,7 @@
 OsStartToRun:
     .fnstart
     .cantunwind
-    ldr     r4, =OS_NVIC_SYSPRI2
+    ldr     r4, =OS_NVIC_SYS_PRI3
     ldr     r5, =OS_NVIC_PENDSV_PRI
     str     r5, [r4]
 

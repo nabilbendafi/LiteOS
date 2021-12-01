@@ -10,6 +10,7 @@ LOCAL_SRCS    = $(LOCAL_SRCS_y)
 LOCAL_INCLUDE   := \
                 -I $(LITEOSTOPDIR)/kernel/extended/include \
                 -I $(LITEOSTOPDIR)/kernel/extended/include/lowpower
+
 ifndef LOSCFG_PLATFORM_OSAPPINIT
 LOCAL_INCLUDE += -I $(LITEOSTOPDIR)/test/include
 endif

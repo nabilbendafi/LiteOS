@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
- * Copyright (c) Huawei Technologies Co., Ltd. 2013-2020. All rights reserved.
- * Description: ARMv6 Or ARMv7 JMP Implementation
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
+ * Description: Usart Init Implementation
  * Author: Huawei LiteOS Team
- * Create: 2013-01-01
+ * Create: 2021-12-01
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  * 1. Redistributions of source code must retain the above copyright notice, this list of
@@ -26,79 +26,73 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --------------------------------------------------------------------------- */
 
-.syntax unified
-#if defined(LOSCFG_ARCH_ARM_V6M)
-.arch armv6-m
-#elif defined(LOSCFG_ARCH_CORTEX_M33)
-.arch armv8-m.main
-#else
-.arch armv7e-m
-#endif
-.thumb
+#include "fsl_uart.h"
+#include "uart.h"
+#include "los_hwi.h"
+#include "platform.h"
 
-.section .text
-.thumb
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+#endif /* __cplusplus */
 
-.type longjmp, %function
-.global longjmp
-longjmp:
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    adds    r0, #16
-    ldmia   r0!, {r3-r7}
+uart_config_t config;
 
-    mov     r8, r3
-    mov     r9, r4
-    mov     r10, r5
-    mov     r11, r6
-    mov     lr, r7
+void UartInit(void) {
+    UART_GetDefaultConfig(&config);
 
-    subs    r0, #36
-    ldmia   r0!, {r4-r7}
+    config.enableTx = true;
+    config.enableRx = true;
 
-    adds    r0, #20
-    ldr     r3, [r0]
-    mov     sp, r3
-#else
-    ldmia   r0!, {r4-r11,lr}
-#if !defined(LOSCFG_ARCH_CORTEX_M3) && !defined(LOSCFG_ARCH_ARM_V6M) && defined(LOSCFG_ARCH_FPU_ENABLE)
-    vldmia  r0!, {d8-d15}
-#endif
-    ldr     sp, [r0]
-#endif
-    mov     r0, r1
-    cmp     r1, #0
-    bne     1f
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    movs    r0, #1
-#else
-    mov     r0, #1
-#endif
-    1:
-    bx      lr
+    UART_Init(UART0, &config, CLOCK_GetFreq(UART0_CLK_SRC));
+}
 
-.type setjmp, %function
-.global setjmp
-setjmp:
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    stmia   r0!, {r4-r7}
+void UartWriteChar(const char c) {
+    UART_WriteBlocking(UART0, (uint8_t *)&c, 1);
+}
 
-    mov     r3, r8
-    mov     r4, r9
-    mov     r5, r10
-    mov     r6, r11
-    mov     r7, lr
-    stmia   r0!, {r3 - r7}
+uint8_t UartReadChar(void) {
+    uint8_t ch;
 
-    mov     r3, sp
-    str     r3, [r0]
-    movs    r0, #0
-#else
-    stmia   r0!, {r4-r11,lr}
-#if (!defined(LOSCFG_ARCH_CORTEX_M3) && !defined(LOSCFG_ARCH_ARM_V6M)) && defined(LOSCFG_ARCH_FPU_ENABLE)
-    vstmia r0!, {d8-d15}
-#endif
-    str     sp, [r0]
-    mov     r0, #0
-#endif
-    bx      lr
+    UART_ReadBlocking(UART0, &ch, sizeof(uint8_t));
 
+    return ch;
+}
+ 
+void UartHandler(void) {
+    uart_getc();
+    UART0->CFIFO |= UART_CFIFO_RXFLUSH_MASK;
+
+    LOS_HwiClear(NUM_HAL_INTERRUPT_UART);
+}
+
+int32_t UartHwi(void) {
+    int32_t ret;
+
+    ret = LOS_HwiCreate(NUM_HAL_INTERRUPT_UART, 0, 0, UartHandler, NULL);
+    if (ret != LOS_OK) {
+        PRINT_ERR("%s,%d, uart interrupt created error:%x\n", __FUNCTION__, __LINE__, ret);
+	return ret;
+    } else {
+        /* Enable RX interrupt. */
+        UART_EnableInterrupts(UART0, kUART_RxDataRegFullInterruptEnable | kUART_RxOverrunInterruptEnable);
+
+        LOS_HwiEnable(NUM_HAL_INTERRUPT_UART);
+    }
+
+    return LOS_OK;
+}
+
+UartControllerOps g_genericUart = {
+    .uartInit = UartInit,
+    .uartWriteChar = UartWriteChar,
+    .uartReadChar = UartReadChar,
+    .uartHwiCreate = UartHwi,
+};
+
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* __cplusplus */

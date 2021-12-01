@@ -1,8 +1,8 @@
 /* ----------------------------------------------------------------------------
- * Copyright (c) Huawei Technologies Co., Ltd. 2013-2020. All rights reserved.
- * Description: ARMv6 Or ARMv7 JMP Implementation
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
+ * Description: Main Process
  * Author: Huawei LiteOS Team
- * Create: 2013-01-01
+ * Create: 2021-12-01
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
  * 1. Redistributions of source code must retain the above copyright notice, this list of
@@ -26,79 +26,58 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * --------------------------------------------------------------------------- */
 
-.syntax unified
-#if defined(LOSCFG_ARCH_ARM_V6M)
-.arch armv6-m
-#elif defined(LOSCFG_ARCH_CORTEX_M33)
-.arch armv8-m.main
-#else
-.arch armv7e-m
-#endif
-.thumb
+#include "main.h"
+#include "sys_init.h"
+#include "los_base.h"
+#include "los_task_pri.h"
+#include "los_typedef.h"
+#include "los_sys.h"
 
-.section .text
-.thumb
+#include "fsl_port.h"
 
-.type longjmp, %function
-.global longjmp
-longjmp:
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    adds    r0, #16
-    ldmia   r0!, {r3-r7}
+#include "los_tick_pri.h"
 
-    mov     r8, r3
-    mov     r9, r4
-    mov     r10, r5
-    mov     r11, r6
-    mov     lr, r7
+void HardwareInit(void)
+{
+    // Set Port B Pin 39/40 as UART0 RX/TX
+    CLOCK_EnableClock(kCLOCK_PortB);
+    PORT_SetPinMux(PORTB, 16U, kPORT_MuxAlt3);  /* PORTB16 (pin 39) is configured as UART0_RX */
+    PORT_SetPinMux(PORTB, 17U, kPORT_MuxAlt3);  /* PORTB17 (pin 40) is configured as UART0_TX */
 
-    subs    r0, #36
-    ldmia   r0!, {r4-r7}
+    // Set Port C Pin 46/49 as UART1 RX/TX
+    CLOCK_EnableClock(kCLOCK_PortC);
+    PORT_SetPinMux(PORTC, 3U, kPORT_MuxAlt3);   /* PORTC3 (pin 46) is configured as UART1_RX */
+    PORT_SetPinMux(PORTC, 4U, kPORT_MuxAlt3);   /* PORTC4 (pin 49) is configured as UART1_TX */
 
-    adds    r0, #20
-    ldr     r3, [r0]
-    mov     sp, r3
-#else
-    ldmia   r0!, {r4-r11,lr}
-#if !defined(LOSCFG_ARCH_CORTEX_M3) && !defined(LOSCFG_ARCH_ARM_V6M) && defined(LOSCFG_ARCH_FPU_ENABLE)
-    vldmia  r0!, {d8-d15}
-#endif
-    ldr     sp, [r0]
-#endif
-    mov     r0, r1
-    cmp     r1, #0
-    bne     1f
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    movs    r0, #1
-#else
-    mov     r0, #1
-#endif
-    1:
-    bx      lr
+    SystemClock_Config();
+    uart_early_init();
 
-.type setjmp, %function
-.global setjmp
-setjmp:
-#if defined(LOSCFG_ARCH_ARM_V6M)
-    stmia   r0!, {r4-r7}
+    g_sys_mem_addr_end = __LOS_HEAP_ADDR_END__;
+    dwt_delay_init(SystemCoreClock);
+}
 
-    mov     r3, r8
-    mov     r4, r9
-    mov     r5, r10
-    mov     r6, r11
-    mov     r7, lr
-    stmia   r0!, {r3 - r7}
+int32_t main(void)
+{
+    OsSetMainTask();
+    OsCurrTaskSet(OsGetMainTask());
 
-    mov     r3, sp
-    str     r3, [r0]
-    movs    r0, #0
-#else
-    stmia   r0!, {r4-r11,lr}
-#if (!defined(LOSCFG_ARCH_CORTEX_M3) && !defined(LOSCFG_ARCH_ARM_V6M)) && defined(LOSCFG_ARCH_FPU_ENABLE)
-    vstmia r0!, {d8-d15}
-#endif
-    str     sp, [r0]
-    mov     r0, #0
-#endif
-    bx      lr
+    HardwareInit();
 
+    PRINT_RELEASE("\n********Hello Huawei LiteOS********\n"
+                    "\nLiteOS Kernel Version : %s\n"
+                    "Processor : %s (@ %d Mhz)\n"
+                    "Build date : %s %s\n\n"
+                    "**********************************\n",
+                    HW_LITEOS_KERNEL_VERSION_STRING,
+		    LOS_CpuInfo(), (SystemCoreClock / 1000000),
+		    __DATE__, __TIME__);
+
+    uint32_t ret = OsMain();
+    if (ret != LOS_OK) {
+        return LOS_NOK;
+    }
+
+    OsStart();
+
+    return LOS_OK;
+}
